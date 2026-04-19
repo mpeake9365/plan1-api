@@ -573,6 +573,12 @@ select.iv option{background:var(--surface2);}
 <!-- SCANNER PAGE -->
 <div id="scannerPage" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
   <div class="scanner">
+    <!-- DEBUG TEST BUTTON -->
+    <div id="debugOut" style="background:#0a1628;border:1px solid var(--accent);border-radius:6px;padding:12px;margin-bottom:12px;font-size:11px;font-family:var(--mono);color:var(--text);display:none;white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
+    <div style="margin-bottom:12px">
+      <button onclick="runDebugTest()" style="padding:8px 16px;background:var(--accent);color:#000;border:none;border-radius:4px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer">🔍 RUN CONNECTION TEST</button>
+    </div>
+
     <!-- MARKET HOURS WARNING -->
     <div id="marketWarning" style="display:none;background:rgba(255,215,64,.08);border:1px solid rgba(255,215,64,.3);border-radius:6px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
       <div style="font-size:20px">⚠️</div>
@@ -811,6 +817,62 @@ async function retryFailed(tickers) {
   }
   localStorage.setItem('sigs', JSON.stringify(S.sigs));
   document.getElementById('scanLastRun').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+}
+
+
+async function runDebugTest() {
+  const out = document.getElementById('debugOut');
+  out.style.display = 'block';
+  out.textContent = 'Starting connection test...\n';
+  
+  const log = (msg) => { out.textContent += msg + '\n'; out.scrollTop = out.scrollHeight; };
+  
+  // Test 1: Basic fetch
+  log('\n1. Testing basic fetch...');
+  try {
+    const r = await fetch('/health');
+    log(`   Status: ${r.status} ${r.ok ? 'OK' : 'FAILED'}`);
+    const j = await r.json();
+    log(`   Response: ${JSON.stringify(j)}`);
+  } catch(e) { log(`   ERROR: ${e.message}`); }
+  
+  // Test 2: Quote endpoint
+  log('\n2. Testing /quote/TER...');
+  try {
+    const r = await fetch('/quote/TER');
+    log(`   Status: ${r.status} ${r.ok ? 'OK' : 'FAILED'}`);
+    const j = await r.json();
+    log(`   Source: ${j.source}`);
+    log(`   Has data: ${!!j.data}`);
+    if (j.data?.chart?.result?.[0]) {
+      const price = j.data.chart.result[0].meta.regularMarketPrice;
+      log(`   TER Price: $${price}`);
+      log('   ✅ DATA LOADING WORKS!');
+    } else if (j.error) {
+      log(`   Error: ${j.error}`);
+    }
+  } catch(e) { log(`   ERROR: ${e.message}`); }
+  
+  // Test 3: Try fetchYahoo function directly
+  log('\n3. Testing fetchYahoo function...');
+  try {
+    const data = await fetchYahoo('TER');
+    if (data) {
+      log(`   ✅ fetchYahoo returned data: $${data.price} from ${data.source}`);
+    } else {
+      log('   ❌ fetchYahoo returned null');
+    }
+  } catch(e) { log(`   ERROR: ${e.message}`); }
+  
+  // Test 4: Check RENDER_API value
+  log('\n4. Config check...');
+  log(`   RENDER_API = "${RENDER_API}"`);
+  log(`   hostname = "${window.location.hostname}"`);
+  log(`   protocol = "${window.location.protocol}"`);
+  const apiBase = window.location.hostname.includes('onrender.com') ? '' : RENDER_API;
+  log(`   apiBase = "${apiBase}"`);
+  
+  log('\nTest complete.');
 }
 
 // ── PAGE SWITCHING ─────────────────────────────────────────────────────────
@@ -1463,13 +1525,15 @@ function signal(data){
   const sH=swingHighs(highs);
   const hasHH=sH.length>=2&&highs[sH[sH.length-1]]>highs[sH[sH.length-2]];
   const hhNote=sH.length>=2?`$${f2(highs[sH[sH.length-1]])} ${hasHH?'>':'≤'} $${f2(highs[sH[sH.length-2]])}`:'Insufficient data';
+  // Define shi here so pullback and support sections can both use it
+  const shi=sH.length?sH[sH.length-1]:n-10;
   // ── 2. PULLBACK (2–5 days) ─────────────────────────────────────────────
   // A pullback is defined by DECLINING DAILY HIGHS day over day after the swing high.
   // Each pullback day must have a lower high than the previous day.
   // The entry trigger is when today's high exceeds the high of the lowest day + $0.20.
 
   let pb = 0;
-  let lowDayInPullback = shi; // index of the day with the lowest high during pullback
+  let lowDayInPullback = shi; // uses shi defined above
   let lowestHighVal = highs[shi];
 
   if (shi < n - 1) {
@@ -1504,7 +1568,7 @@ function signal(data){
       : `${pb}-day pullback in progress · Low day high: $${f2(highOfLowDay)} · Entry trigger: $${f2(entryTrigger)}`;
   // Support
   const p=data.price,ma20=data.ma20,ma50=data.ma50,ma200=data.ma200,near=.04;
-  const sL=swingLows(lows);const shi=sH.length?sH[sH.length-1]:n-10;
+  const sL=swingLows(lows);
   const slBeforeHi=sL.filter(i=>i<shi);const sli=slBeforeHi.length?slBeforeHi[slBeforeHi.length-1]:0;
   const rH=highs[shi],rL=lows[sli]||Math.min(...lows.slice(-30));
   const fr=rH-rL;

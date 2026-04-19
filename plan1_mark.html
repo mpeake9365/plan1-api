@@ -1525,13 +1525,15 @@ function signal(data){
   const sH=swingHighs(highs);
   const hasHH=sH.length>=2&&highs[sH[sH.length-1]]>highs[sH[sH.length-2]];
   const hhNote=sH.length>=2?`$${f2(highs[sH[sH.length-1]])} ${hasHH?'>':'≤'} $${f2(highs[sH[sH.length-2]])}`:'Insufficient data';
+  // Define shi here so pullback and support sections can both use it
+  const shi=sH.length?sH[sH.length-1]:n-10;
   // ── 2. PULLBACK (2–5 days) ─────────────────────────────────────────────
   // A pullback is defined by DECLINING DAILY HIGHS day over day after the swing high.
   // Each pullback day must have a lower high than the previous day.
   // The entry trigger is when today's high exceeds the high of the lowest day + $0.20.
 
   let pb = 0;
-  let lowDayInPullback = shi; // index of the day with the lowest high during pullback
+  let lowDayInPullback = shi; // uses shi defined above
   let lowestHighVal = highs[shi];
 
   if (shi < n - 1) {
@@ -1566,7 +1568,7 @@ function signal(data){
       : `${pb}-day pullback in progress · Low day high: $${f2(highOfLowDay)} · Entry trigger: $${f2(entryTrigger)}`;
   // Support
   const p=data.price,ma20=data.ma20,ma50=data.ma50,ma200=data.ma200,near=.04;
-  const sL=swingLows(lows);const shi=sH.length?sH[sH.length-1]:n-10;
+  const sL=swingLows(lows);
   const slBeforeHi=sL.filter(i=>i<shi);const sli=slBeforeHi.length?slBeforeHi[slBeforeHi.length-1]:0;
   const rH=highs[shi],rL=lows[sli]||Math.min(...lows.slice(-30));
   const fr=rH-rL;
