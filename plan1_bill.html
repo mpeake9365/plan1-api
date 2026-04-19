@@ -356,10 +356,10 @@ select.iv option{background:var(--surface2);}
       <div class="sec">
         <div class="sec-lbl">Entry Signal Criteria</div>
         <div style="display:flex;flex-direction:column;gap:7px;font-size:10px;color:var(--text2)">
-          <div><b style="color:var(--text)">1. Higher High</b><br>Recent swing high above prior swing high</div>
+          <div><b style="color:var(--text)">1. Higher High</b><br>Most recent resistance level (swing high) is higher than the previous resistance level, looking back ~2 months to identify significant peaks</div>
           <div><b style="color:var(--text)">2. Pullback (2–5 days)</b><br>Each day's high is lower than the prior day's high. Continues while each day's high stays below the high of the lowest-low day + $0.20. Downward trend is over when a day's high is $0.20 or more above the high of the lowest-low day.</div>
           <div><b style="color:var(--text)">3. Near Support</b><br>EMA20, SMA50, SMA200, Fib 38.2/50/61.8%, swing low</div>
-          <div><b style="color:var(--text)">4. Higher Low</b><br>Current pullback low above prior pullback low</div>
+          <div><b style="color:var(--text)">4. Higher Low</b><br>Most recent support level (swing low) is higher than the previous support level, looking back ~2 months to identify significant troughs</div>
           <div style="margin-top:4px;display:flex;flex-direction:column;gap:3px">
             <div style="padding:4px 8px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:3px;color:var(--green);font-size:9px">🟢 ENTRY SIGNAL — All 4 met</div>
             <div style="padding:4px 8px;background:rgba(255,215,64,.08);border:1px solid rgba(255,215,64,.2);border-radius:3px;color:var(--yellow);font-size:9px">🟡 WATCH — 3 of 4 met</div>
@@ -1641,8 +1641,45 @@ function signal(data){
     candles:candlePatterns(bars.slice(-5)),source:data.source};
 }
 
-function swingHighs(h,lb=3){const out=[];for(let i=lb;i<h.length-lb;i++){const w=h.slice(i-lb,i+lb+1);if(h[i]===Math.max(...w))out.push(i);}return out;}
-function swingLows(l,lb=3){const out=[];for(let i=lb;i<l.length-lb;i++){const w=l.slice(i-lb,i+lb+1);if(l[i]===Math.min(...w))out.push(i);}return out;}
+function swingHighs(h, lb=40) {
+  // Find significant swing highs using ~2 month (40 trading day) lookback
+  // A swing high must be the highest point within lb days on each side
+  const out = [];
+  for (let i = lb; i < h.length - lb; i++) {
+    const window = h.slice(i - lb, i + lb + 1);
+    if (h[i] === Math.max(...window)) out.push(i);
+  }
+  // If too few found with wide window, fall back to smaller lookback
+  if (out.length < 2) {
+    const fallback = [];
+    for (let i = 10; i < h.length - 10; i++) {
+      const window = h.slice(i - 10, i + 10 + 1);
+      if (h[i] === Math.max(...window)) fallback.push(i);
+    }
+    return fallback;
+  }
+  return out;
+}
+
+function swingLows(l, lb=40) {
+  // Find significant swing lows using ~2 month (40 trading day) lookback
+  // A swing low must be the lowest point within lb days on each side
+  const out = [];
+  for (let i = lb; i < l.length - lb; i++) {
+    const window = l.slice(i - lb, i + lb + 1);
+    if (l[i] === Math.min(...window)) out.push(i);
+  }
+  // If too few found with wide window, fall back to smaller lookback
+  if (out.length < 2) {
+    const fallback = [];
+    for (let i = 10; i < l.length - 10; i++) {
+      const window = l.slice(i - 10, i + 10 + 1);
+      if (l[i] === Math.min(...window)) fallback.push(i);
+    }
+    return fallback;
+  }
+  return out;
+}
 
 function candlePatterns(bars){
   const out=[];
