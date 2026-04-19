@@ -662,8 +662,10 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('DOMContentLoaded', () => {
   // Detect if running from file:// - data won't load
-  // No file:// issues when served from Render
-  document.getElementById('fileWarning').style.display = 'none';
+  // Show setup banner if Render API not configured yet
+  if (RENDER_API === 'YOUR_RENDER_URL') {
+    document.getElementById('fileWarning').style.display = 'block';
+  }
   renderWL();
   startClock();
   const d = new Date(); d.setDate(d.getDate()+30);
@@ -1007,7 +1009,10 @@ async function fetchYahoo(ticker) {
   if (RENDER_API && RENDER_API !== 'YOUR_RENDER_URL') {
     try {
       console.log(`Fetching ${ticker} from Render API...`);
-      const res = await ftch(`${RENDER_API}/quote/${ticker}`, 15000);
+      // Use relative URL when served from Render (same origin = no CORS)
+      const apiBase = window.location.hostname.includes('onrender.com') 
+        ? '' : RENDER_API;
+      const res = await ftch(`${apiBase}/quote/${ticker}`, 15000);
       console.log(`${ticker} response:`, res?.status, res?.ok);
       if (res?.ok) {
         const json = await res.json();
