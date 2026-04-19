@@ -1599,6 +1599,48 @@ function signal(data){
       ? `${pb}-day pullback complete ✓ Downward trend over — high of lowest-low day: $${f2(highOfLowDay)} · Trigger: $${f2(entryTrigger)}`
       : `${pb}-day pullback in progress · Lowest-low day high: $${f2(highOfLowDay)} · Trend ends at: $${f2(entryTrigger)}`;
 
+  // ── 3. NEAR SUPPORT ────────────────────────────────────────────────────
+  const p=data.price,ma20=data.ma20,ma50=data.ma50,ma200=data.ma200,near=.04;
+  const sL=swingLows(lows);
+  const slBeforeHi=sL.filter(i=>i<shi);const sli=slBeforeHi.length?slBeforeHi[slBeforeHi.length-1]:0;
+  const rH=highs[shi],rL=lows[sli]||Math.min(...lows.slice(-30));
+  const fr=rH-rL;
+  const f38=rH-fr*.382,f50=rH-fr*.5,f62=rH-fr*.618;
+  const nM20=Math.abs(p-ma20)/p<near,nM50=Math.abs(p-ma50)/p<near,nM200=Math.abs(p-ma200)/p<(near*1.5);
+  const nF38=Math.abs(p-f38)/p<near,nF50=Math.abs(p-f50)/p<near,nF62=Math.abs(p-f62)/p<near;
+  const nSL=lows.slice(-20).some(l=>Math.abs(p-l)/p<near);
+  const hasS=nM20||nM50||nM200||nF38||nF50||nF62||nSL;
+  const hits=[];
+  if(nM20)hits.push(`EMA20 $${f2(ma20)}`);
+  if(nM50)hits.push(`SMA50 $${f2(ma50)}`);
+  if(nM200)hits.push(`SMA200 $${f2(ma200)}`);
+  if(nF38)hits.push(`Fib38 $${f2(f38)}`);
+  if(nF50)hits.push(`Fib50 $${f2(f50)}`);
+  if(nF62)hits.push(`Fib62 $${f2(f62)}`);
+  if(nSL)hits.push('Swing low');
+  const sNote=hits.length?hits.join(', '):`MA50 $${f2(ma50)} (${f2(Math.abs(p-ma50)/p*100,1)}% away)`;
+
+  // ── 4. HIGHER LOW ───────────────────────────────────────────────────────
+  const sLa=swingLows(lows);
+  const hasHL=sLa.length>=2&&lows[sLa[sLa.length-1]]>lows[sLa[sLa.length-2]];
+  const hlNote=sLa.length>=2?`$${f2(lows[sLa[sLa.length-1]])} ${hasHL?'>':'≤'} $${f2(lows[sLa[sLa.length-2]])}`:'Insufficient data';
+
+  // ── Score & Signal ───────────────────────────────────────────────────────
+  const conds=[
+    {lbl:'Higher High',met:hasHH,note:hhNote},
+    {lbl:'2–5 Day Pullback',met:hasPB,partial:partPB,note:pbNote},
+    {lbl:'Near Support',met:hasS,note:sNote},
+    {lbl:'Higher Low',met:hasHL,note:hlNote},
+  ];
+  const metC=conds.filter(c=>c.met).length;
+  const partC=conds.filter(c=>c.partial).length*.5;
+  const total=metC+partC;
+  const sig=metC===4?'green':total>=3||metC>=3?'yellow':'red';
+  return{t:data.ticker,price:data.price,change:data.change,changePct:data.changePct,
+    sig,met:metC,conds,hits,fib:{f38,f50,f62},pb,breakingOut,entryTrigger,highOfLowDay,
+    candles:candlePatterns(bars.slice(-5)),source:data.source};
+}
+
 function swingHighs(h,lb=3){const out=[];for(let i=lb;i<h.length-lb;i++){const w=h.slice(i-lb,i+lb+1);if(h[i]===Math.max(...w))out.push(i);}return out;}
 function swingLows(l,lb=3){const out=[];for(let i=lb;i<l.length-lb;i++){const w=l.slice(i-lb,i+lb+1);if(l[i]===Math.min(...w))out.push(i);}return out;}
 
