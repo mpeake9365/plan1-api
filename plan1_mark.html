@@ -1533,37 +1533,58 @@ function signal(data){
   // Define shi here so pullback and support sections can both use it
   const shi=sH.length?sH[sH.length-1]:n-10;
   // ── 2. PULLBACK (2–5 days) ─────────────────────────────────────────────
-  // A pullback is defined by DECLINING DAILY HIGHS day over day after the swing high.
-  // Each pullback day must have a lower high than the previous day.
-  // The entry trigger is when today's high exceeds the high of the lowest day + $0.20.
+  // Definition: After the swing high, there must be 2-5 CONSECUTIVE days
+  // where each day's HIGH is strictly LOWER than the prior day's HIGH.
+  // The most recent such sequence is what counts.
+  // Entry trigger fires when today's high > high of the lowest pullback day + $0.20
 
+  // Step 1: Find the most recent consecutive declining-highs sequence after shi
   let pb = 0;
-  let lowDayInPullback = shi; // uses shi defined above
-  let lowestHighVal = highs[shi];
+  let lowDayInPullback = n - 1;
+  let lowestHighVal = highs[n - 1];
+  let pbEndIdx = n - 1; // last day of pullback (could be today if still in it)
 
-  if (shi < n - 1) {
-    for (let i = shi + 1; i < n; i++) {
-      if (highs[i] < highs[i-1]) {
-        // Daily high is lower than previous day — pullback continues
-        pb++;
-        if (highs[i] < lowestHighVal) {
-          lowestHighVal = highs[i];
-          lowDayInPullback = i;
-        }
-      } else {
-        // Daily high is higher — breakout or bounce
-        if (pb >= 2) break; // had a valid pullback, today is the breakout
-        else { pb = 0; lowestHighVal = highs[i]; lowDayInPullback = i; } // reset
+  // Walk backwards from today to find where the pullback starts
+  // Look for the most recent run of consecutive declining highs
+  let runLen = 0;
+  let runLowIdx = n - 1;
+  let runLowVal = highs[n - 1];
+
+  for (let i = n - 1; i > shi; i--) {
+    if (highs[i] < highs[i - 1]) {
+      // This day is part of a declining-high sequence
+      runLen++;
+      if (highs[i] < runLowVal) {
+        runLowVal = highs[i];
+        runLowIdx = i;
       }
+    } else {
+      // Break in sequence — stop here
+      // Only count this run if it ends at or near today (within 2 days)
+      if (n - 1 - pbEndIdx <= 2) {
+        pb = runLen;
+        lowDayInPullback = runLowIdx;
+        lowestHighVal = runLowVal;
+      }
+      break;
     }
+    pbEndIdx = i;
   }
 
-  // Entry trigger: today's high must be > high of the lowest pullback day + $0.20
+  // If we walked all the way back without a break, use what we found
+  if (pb === 0 && runLen > 0 && (n - 1 - pbEndIdx) <= 2) {
+    pb = runLen;
+    lowDayInPullback = runLowIdx;
+    lowestHighVal = runLowVal;
+  }
+
+  // Step 2: Entry trigger — today's high must be > high of lowest pullback day + $0.20
   const highOfLowDay = highs[lowDayInPullback];
   const entryTrigger = highOfLowDay + 0.20;
-  const todayHigh = highs[n-1];
+  const todayHigh = highs[n - 1];
   const breakingOut = todayHigh >= entryTrigger;
 
+  // Step 3: Valid pullback = 2-5 consecutive declining-high days
   const hasPB = pb >= 2 && pb <= 5;
   const partPB = pb >= 6 && pb <= 8;
   const pbNote = pb === 0
