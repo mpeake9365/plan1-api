@@ -590,7 +590,6 @@ select.iv option{background:var(--surface2);}
       </div>
       <div class="scan-btns">
         <span style="font-size:10px;color:var(--text3)" id="scanLastRun"></span>
-        <button class="btn btn-ghost btn-sm" onclick="goAnalysis()">↗ ANALYSIS TOOL</button>
         <button class="btn btn-ghost btn-sm" onclick="clearCache();toast('Cache cleared','ok')">🗑 CLEAR CACHE</button>
         <button class="btn btn-primary" id="scanBtn" onclick="runScan()">▶ RUN SCANNER</button>
       </div>
@@ -1617,10 +1616,12 @@ function signal(data){
   // After that the setup is stale — need a fresh pullback
   const breakoutRecent = bestBreakoutIdx === n - 1;
 
+  // For active pullbacks: must start after swing high AND be recent
+  const pbAfterSwingHigh = pbStartIdx > shi;
   const hasPB = currentPB >= 2 && currentPB <= 5 && 
-    ((currentComplete && breakoutRecent) || (pbActive && pbRecent));
+    ((currentComplete && breakoutRecent) || (pbActive && pbRecent && pbAfterSwingHigh));
   const partPB = (currentPB >= 6 && currentPB <= 8) && 
-    ((currentComplete && breakoutRecent) || (pbActive && pbRecent));
+    ((currentComplete && breakoutRecent) || (pbActive && pbRecent && pbAfterSwingHigh));
   const pbNote = currentPB === 0
     ? 'No pullback found after swing high'
     : currentComplete && !breakoutRecent
