@@ -357,7 +357,7 @@ select.iv option{background:var(--surface2);}
         <div class="sec-lbl">Entry Signal Criteria</div>
         <div style="display:flex;flex-direction:column;gap:7px;font-size:10px;color:var(--text2)">
           <div><b style="color:var(--text)">1. Higher High</b><br>Most recent resistance level (swing high) is higher than the previous resistance level, looking back ~2 months to identify significant peaks</div>
-          <div><b style="color:var(--text)">2. Pullback (2–5 days)</b><br>Each day's high is lower than the prior day's high. Continues while each day's high stays below the high of the lowest-low day + $0.20. Downward trend is over when a day's high is $0.20 or more above the high of the lowest-low day.</div>
+          <div><b style="color:var(--text)">2. Pullback (2–5 days)</b><br>Pullback starts when a day's high is lower than the prior day's high. The day with the lowest low during the pullback is the key reference day. The pullback continues while each subsequent day's high stays below that day's high + $0.20. If a new day has a lower low, it becomes the new reference day and the threshold resets. Downward trend is over when any day's high reaches the reference day's high + $0.20 or more.</div>
           <div><b style="color:var(--text)">3. Near Support</b><br>EMA20, SMA50, SMA200, Fib 38.2/50/61.8%, swing low</div>
           <div><b style="color:var(--text)">4. Higher Low</b><br>Most recent support level (swing low) is higher than the previous support level, looking back ~2 months to identify significant troughs</div>
           <div style="margin-top:4px;display:flex;flex-direction:column;gap:3px">
@@ -1597,18 +1597,18 @@ function signal(data){
   const todayHigh = highs[n - 1];
   const breakingOut = todayHigh >= entryTrigger || (pbComplete && breakoutDayIdx === n - 1);
 
-  // STRICT RULES:
-  // - Must be 2-5 days minimum
-  // - Must have started recently (within 10 bars)
-  // - Must be breaking out OR still actively in pullback
-  const hasPB = pb >= 2 && pb <= 5 && pbRecent && (breakingOut || pbActive);
-  const partPB = (pb >= 6 && pb <= 8) && pbRecent && (breakingOut || pbActive);
+  // RULES:
+  // - Must be 2-5 days
+  // - Completed pullbacks (breakout happened) are always valid
+  // - Active pullbacks (still in progress) must have started within last 10 bars
+  const hasPB = pb >= 2 && pb <= 5 && (pbComplete || (pbActive && pbRecent));
+  const partPB = (pb >= 6 && pb <= 8) && (pbComplete || (pbActive && pbRecent));
   const pbNote = pb === 0
     ? 'No pullback found after swing high'
-    : !pbRecent
-      ? `${pb}-day pullback found but too old — not recent enough`
-      : breakingOut
-        ? `${pb}-day pullback complete ✓ Downward trend over — trigger: $${f2(entryTrigger)}`
+    : pbComplete
+      ? `${pb}-day pullback complete ✓ Downward trend over — trigger: $${f2(entryTrigger)}`
+      : !pbRecent
+        ? `${pb}-day pullback in progress but started too long ago`
         : `${pb}-day pullback in progress · Trend ends at: $${f2(entryTrigger)}`;
 
   // ── 3. NEAR SUPPORT ────────────────────────────────────────────────────
