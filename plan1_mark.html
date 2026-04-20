@@ -318,6 +318,7 @@ select.iv option{background:var(--surface2);}
   </div>
   <div class="hdr-right">
     <button class="btn btn-ghost btn-sm" onclick="goScanner()">◎ SCANNER</button>
+    <button class="btn btn-ghost btn-sm" onclick="goAnalysis()">↗ ANALYSIS</button>
     <span class="dot"></span><span class="badge" id="mktStatus">MARKET CLOSED · Yahoo Finance</span>
     <div class="mtog">
       <button class="mbtn active" onclick="setMode('paper')">PAPER</button>
@@ -400,8 +401,8 @@ select.iv option{background:var(--surface2);}
           </div>
         </div>
         <div class="tabs">
-          <button class="tab on" id="tab-analysis" onclick="showTab('analysis')">ANALYSIS</button>
-          <button class="tab" id="tab-chart" onclick="showTab('chart')">CHART</button>
+          <button class="tab on" id="tab-chart" onclick="showTab('chart')">CHART</button>
+          <button class="tab" id="tab-analysis" onclick="showTab('analysis')">ANALYSIS</button>
           <button class="tab" id="tab-calculator" onclick="showTab('calculator')">CALCULATOR</button>
           <button class="tab" id="tab-options" onclick="showTab('options')">OPTIONS CHAIN</button>
           <button class="tab" id="tab-log" onclick="showTab('log')">TRADE LOG</button>
@@ -412,7 +413,7 @@ select.iv option{background:var(--surface2);}
       <div class="panels" id="panelsScroll">
 
         <!-- ANALYSIS -->
-        <div class="panel on" id="panel-analysis">
+        <div class="panel" id="panel-analysis">
           <div class="card">
             <div class="card-title">Market Data</div>
             <div class="grid3">
@@ -434,7 +435,7 @@ select.iv option{background:var(--surface2);}
         </div>
 
         <!-- CHART -->
-        <div class="panel" id="panel-chart">
+        <div class="panel on" id="panel-chart">
           <div class="card" style="padding:0;overflow:hidden">
             <div class="chart-toolbar">
               <span style="font-family:var(--sans);font-weight:800;font-size:13px" id="chartLbl">—</span>
@@ -1612,18 +1613,23 @@ function signal(data){
   const todayHigh = highs[n - 1];
   const breakingOut = todayHigh >= entryTrigger || (currentComplete && (bestBreakoutIdx === n-1 || bestBreakoutIdx === n-2));
 
-  // STRICT: active pullback must be recent; completed must have 2-5 days
+  // Entry is only valid on the breakout day itself
+  // After that the setup is stale — need a fresh pullback
+  const breakoutRecent = bestBreakoutIdx === n - 1;
+
   const hasPB = currentPB >= 2 && currentPB <= 5 && 
-    (currentComplete || (pbActive && pbRecent));
+    ((currentComplete && breakoutRecent) || (pbActive && pbRecent));
   const partPB = (currentPB >= 6 && currentPB <= 8) && 
-    (currentComplete || (pbActive && pbRecent));
+    ((currentComplete && breakoutRecent) || (pbActive && pbRecent));
   const pbNote = currentPB === 0
     ? 'No pullback found after swing high'
-    : currentComplete
-      ? `${currentPB}-day pullback complete ✓ Downward trend over — trigger: $${f2(entryTrigger)}`
-      : !pbRecent
-        ? `${currentPB}-day active pullback started too long ago`
-        : `${currentPB}-day pullback in progress · Trend ends at: $${f2(entryTrigger)}`;
+    : currentComplete && !breakoutRecent
+      ? `${currentPB}-day pullback complete but entry window passed — wait for new setup`
+      : currentComplete
+        ? `${currentPB}-day pullback complete ✓ Downward trend over — trigger: $${f2(entryTrigger)}`
+        : !pbRecent
+          ? `${currentPB}-day active pullback started too long ago`
+          : `${currentPB}-day pullback in progress · Trend ends at: $${f2(entryTrigger)}`;
 
   // ── 3. NEAR SUPPORT ────────────────────────────────────────────────────
   const p=data.price,ma20=data.ma20,ma50=data.ma50,ma200=data.ma200,near=.04;
