@@ -1615,9 +1615,13 @@ function signal(data){
   const todayHigh = highs[n - 1];
   const breakingOut = todayHigh >= entryTrigger || (currentComplete && (bestBreakoutIdx === n-1 || bestBreakoutIdx === n-2));
 
-  // Entry is only valid on the breakout day itself
-  // After that the setup is stale — need a fresh pullback
-  const breakoutRecent = bestBreakoutIdx === n - 1;
+  // Entry is only valid on the breakout day itself (today)
+  // Use timestamp comparison not index, since cached data indices can shift
+  const breakoutTs = bestBreakoutIdx >= 0 ? bars[bestBreakoutIdx]?.t : null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const breakoutDate = breakoutTs ? new Date(breakoutTs) : null;
+  if(breakoutDate) breakoutDate.setHours(0,0,0,0);
+  const breakoutRecent = breakoutDate && breakoutDate.getTime() === today.getTime();
 
   // For active pullbacks: must start after swing high AND be recent
   const pbAfterSwingHigh = pbStartIdx > shi;
