@@ -1543,6 +1543,8 @@ function signal(data){
   // 4. Must be MINIMUM 2 days, maximum 5 days to be valid
   // 5. Pullback must START within 10 days of today to be relevant
 
+  // Find ALL pullbacks after swing high, keep the MOST RECENT one
+  // This prevents old completed pullbacks from masking a new 1-day move
   let pb = 0;
   let lowDayInPullback = shi;
   let lowestLowInPB = lows[shi];
@@ -1550,10 +1552,11 @@ function signal(data){
   let pbComplete = false;
   let breakoutDayIdx = -1;
   let pbStartIdx = -1;
+  // Store best completed pullback found so far
+  let bestPB = 0, bestLowDay = shi, bestComplete = false, bestBreakoutIdx = -1, bestStartIdx = -1;
 
   for (let i = shi + 1; i < n; i++) {
     if (!pbActive) {
-      // Pullback starts: first day with lower high than prior day after swing high
       if (highs[i] < highs[i - 1]) {
         pbActive = true;
         pb = 1;
@@ -1562,21 +1565,28 @@ function signal(data){
         lowDayInPullback = i;
       }
     } else {
-      // Pullback is active
       const trigger = highs[lowDayInPullback] + 0.20;
       if (highs[i] >= trigger) {
-        // Downward trend is over — high exceeded lowest-low day high + $0.20
-        pbComplete = true;
-        breakoutDayIdx = i;
-        break;
+        // Pullback completed — save it and keep looking for newer ones
+        if (pb >= 2 && pb <= 5) {
+          bestPB = pb;
+          bestLowDay = lowDayInPullback;
+          bestComplete = true;
+          bestBreakoutIdx = i;
+          bestStartIdx = pbStartIdx;
+        }
+        // Reset to look for next pullback after this breakout
+        pbActive = false;
+        pb = 0;
+        pbStartIdx = -1;
+        lowestLowInPB = lows[i];
+        lowDayInPullback = i;
       } else {
-        // Still in pullback
         pb++;
         if (lows[i] < lowestLowInPB) {
           lowestLowInPB = lows[i];
           lowDayInPullback = i;
         }
-        // Reset if pullback exceeds 8 days — too extended
         if (pb > 8) {
           pbActive = false;
           pb = 0;
@@ -1588,28 +1598,32 @@ function signal(data){
     }
   }
 
-  // Pullback must have started recently (within last 10 bars) to be relevant
-  const pbRecent = pbStartIdx >= n - 10;
+  // If still in active pullback at end of loop, that's our current pullback
+  // Otherwise use best completed pullback found
+  const currentPB = pbActive ? pb : bestPB;
+  const currentLowDay = pbActive ? lowDayInPullback : bestLowDay;
+  const currentComplete = !pbActive && bestComplete;
+  const currentStartIdx = pbActive ? pbStartIdx : bestStartIdx;
 
-  // Entry trigger = HIGH of the day with the lowest LOW + $0.20
-  const highOfLowDay = highs[lowDayInPullback];
+  // Recalculate with most relevant pullback
+  const pbRecent = currentStartIdx >= n - 10;
+  const highOfLowDay = highs[currentLowDay];
   const entryTrigger = highOfLowDay + 0.20;
   const todayHigh = highs[n - 1];
-  const breakingOut = todayHigh >= entryTrigger || (pbComplete && breakoutDayIdx === n - 1);
+  const breakingOut = todayHigh >= entryTrigger || (currentComplete && (bestBreakoutIdx === n-1 || bestBreakoutIdx === n-2));
 
-  // RULES:
-  // - Must be 2-5 days
-  // - Completed pullbacks (breakout happened) are always valid
-  // - Active pullbacks (still in progress) must have started within last 10 bars
-  const hasPB = pb >= 2 && pb <= 5 && (pbComplete || (pbActive && pbRecent));
-  const partPB = (pb >= 6 && pb <= 8) && (pbComplete || (pbActive && pbRecent));
-  const pbNote = pb === 0
+  // STRICT: active pullback must be recent; completed must have 2-5 days
+  const hasPB = currentPB >= 2 && currentPB <= 5 && 
+    (currentComplete || (pbActive && pbRecent));
+  const partPB = (currentPB >= 6 && currentPB <= 8) && 
+    (currentComplete || (pbActive && pbRecent));
+  const pbNote = currentPB === 0
     ? 'No pullback found after swing high'
-    : pbComplete
-      ? `${pb}-day pullback complete ✓ Downward trend over — trigger: $${f2(entryTrigger)}`
+    : currentComplete
+      ? `${currentPB}-day pullback complete ✓ Downward trend over — trigger: $${f2(entryTrigger)}`
       : !pbRecent
-        ? `${pb}-day pullback in progress but started too long ago`
-        : `${pb}-day pullback in progress · Trend ends at: $${f2(entryTrigger)}`;
+        ? `${currentPB}-day active pullback started too long ago`
+        : `${currentPB}-day pullback in progress · Trend ends at: $${f2(entryTrigger)}`;
 
   // ── 3. NEAR SUPPORT ────────────────────────────────────────────────────
   const p=data.price,ma20=data.ma20,ma50=data.ma50,ma200=data.ma200,near=.04;
