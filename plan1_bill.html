@@ -952,7 +952,7 @@ function showStockView(t){
   document.getElementById('vPrice').textContent='...';
   document.getElementById('vChange').textContent='';
   document.getElementById('vVol').textContent='Fetching from Yahoo Finance...';
-  showTab('analysis');
+  showTab('chart');
 }
 
 // ── FETCH DATA ─────────────────────────────────────────────────────────────
@@ -1531,7 +1531,10 @@ function signal(data){
   const hasHH=sH.length>=2&&highs[sH[sH.length-1]]>highs[sH[sH.length-2]];
   const hhNote=sH.length>=2?`$${f2(highs[sH[sH.length-1]])} ${hasHH?'>':'≤'} $${f2(highs[sH[sH.length-2]])}`:'Insufficient data';
   // Define shi here so pullback and support sections can both use it
-  const shi=sH.length?sH[sH.length-1]:n-10;
+  // Use most recent swing high - prefer one within last 60 bars if available
+  const recentSH = sH.filter(i => i >= n - 60);
+  const shi = recentSH.length ? recentSH[recentSH.length-1] : 
+              sH.length ? sH[sH.length-1] : n-10;
   // ── 2. PULLBACK (2–5 days) ─────────────────────────────────────────────
   // DEFINITION:
   // 1. Pullback STARTS when a day's high is lower than the prior day's high
