@@ -478,55 +478,153 @@ select.iv option{background:var(--surface2);}
 
         <!-- CALCULATOR -->
         <div class="panel" id="panel-calculator">
+
+          <!-- ROW 1: Date + Contracts -->
           <div class="card">
-            <div class="card-title">Price Inputs</div>
+            <div class="card-title">Trade Setup — Plan #1</div>
             <div class="grid3">
-              <div class="ig"><div class="il">High of Low Day</div><input class="iv" id="c_hol" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()"></div>
-              <div class="ig"><div class="il">Low of Low Day</div><input class="iv" id="c_lol" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()"></div>
-              <div class="ig"><div class="il">Recent Resistance</div><input class="iv" id="c_res" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()"></div>
-              <div class="ig"><div class="il">Recent Support</div><input class="iv" id="c_sup" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()"></div>
-              <div class="ig"><div class="il">Option Bid</div><input class="iv" id="c_bid" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()"></div>
-              <div class="ig"><div class="il">Option Ask</div><input class="iv" id="c_ask" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()"></div>
-              <div class="ig"><div class="il">Theo Price</div><input class="iv" id="c_theo" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()"></div>
-              <div class="ig"><div class="il"># Contracts</div><input class="iv" id="c_cont" type="number" min="1" value="1" oninput="calcTrade()"></div>
-              <div class="ig"><div class="il">Reduce Target ($)</div><input class="iv" id="c_red" type="number" step="0.01" value="0.20" oninput="calcTrade()"></div>
+              <div class="ig"><div class="il">Date</div><input class="iv" id="c_date" type="date" oninput="calcTrade()"></div>
+              <div class="ig"><div class="il"># of Contracts</div><input class="iv" id="c_cont" type="number" min="1" value="1" oninput="calcTrade()"></div>
+              <div class="ig"><div class="il">Reduce Target By ($)</div><input class="iv" id="c_red" type="number" step="0.01" value="0.20" oninput="calcTrade()"></div>
             </div>
           </div>
+
+          <!-- ROW 2: Price Inputs in Excel order -->
           <div class="card">
-            <div class="card-title">Calculated Results</div>
-            <div class="grid4">
-              <div class="cc"><div class="cl">Entry Price</div><div class="cv a" id="r_entry">—</div></div>
-              <div class="cc"><div class="cl">Limit (Option)</div><div class="cv a" id="r_limit">—</div></div>
-              <div class="cc"><div class="cl">Stop</div><div class="cv r" id="r_stop">—</div></div>
-              <div class="cc"><div class="cl">Max Loss/Share</div><div class="cv r" id="r_mls">—</div></div>
-              <div class="cc"><div class="cl">Swing Target</div><div class="cv g" id="r_swing">—</div></div>
-              <div class="cc"><div class="cl">Flag Target</div><div class="cv g" id="r_flag">—</div></div>
-              <div class="cc"><div class="cl">100% Target</div><div class="cv y" id="r_full">—</div></div>
-              <div class="cc"><div class="cl">Max Loss $</div><div class="cv r" id="r_mld">—</div></div>
-              <div class="cc"><div class="cl">Stop→Entry Gap</div><div class="cv" id="r_sgap">—</div></div>
-              <div class="cc"><div class="cl">Theo at Stop</div><div class="cv" id="r_tas">—</div></div>
-              <div class="cc"><div class="cl">Current→Entry</div><div class="cv" id="r_cgap">—</div></div>
-              <div class="cc"><div class="cl">Option Entry Theo</div><div class="cv a" id="r_oet">—</div></div>
+            <div class="card-title">Price Levels</div>
+            <div class="grid3">
+              <div class="ig">
+                <div class="il">High of Low Day</div>
+                <input class="iv" id="c_hol" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()">
+              </div>
+              <div class="ig">
+                <div class="il">Entry Price <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_entry" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">High of Low Day + $0.20</div>
+              </div>
+              <div class="ig">
+                <div class="il">Option Strike <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_strike" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Closest strike ≥ Entry (round up)</div>
+              </div>
+              <div class="ig">
+                <div class="il">Low of Low Day</div>
+                <input class="iv" id="c_lol" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()">
+              </div>
+              <div class="ig">
+                <div class="il">Stop <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_stop" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Low of Low Day × 0.99</div>
+              </div>
+              <div class="ig">
+                <div class="il">Diff: Stop to Entry <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_sgap" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Stop − Entry</div>
+              </div>
+              <div class="ig">
+                <div class="il">Recent Resistance (HIGH)</div>
+                <input class="iv" id="c_res" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()">
+              </div>
+              <div class="ig">
+                <div class="il">Swing Target <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_swing" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Resistance − $0.20</div>
+              </div>
+              <div class="ig"></div>
+              <div class="ig">
+                <div class="il">Recent Support (LOW)</div>
+                <input class="iv" id="c_sup" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()">
+              </div>
+              <div class="ig">
+                <div class="il">Flag Target <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_flag" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Entry + (High of Low Day − Support)</div>
+              </div>
+              <div class="ig"></div>
             </div>
           </div>
+
+          <!-- ROW 3: Option Pricing -->
           <div class="card">
-            <div class="card-title">Theo Price Simulator (Black-Scholes)</div>
-            <div class="theo-grid">
-              <div class="ig"><div class="il">Target Date</div><input class="iv" id="t_date" type="date"></div>
-              <div class="ig"><div class="il">Price Adj ($)</div><input class="iv" id="t_padj" type="number" step="0.01" value="0"></div>
-              <div class="ig"><div class="il">IV Adj (%)</div><input class="iv" id="t_ivadj" type="number" step="0.01" value="0"></div>
-              <button class="btn btn-primary" onclick="calcTheo()">CALC</button>
-            </div>
-            <div class="theo-result">
-              <div><div class="trl">Theoretical Option Price</div><div style="font-size:9px;color:var(--text3);margin-top:2px" id="t_params">Enter details below</div></div>
-              <div class="trv" id="t_result">—</div>
-            </div>
-            <div class="grid3 mt8">
-              <div class="ig"><div class="il">Strike Price</div><input class="iv" id="t_strike" type="number" step="0.5" placeholder="Strike"></div>
-              <div class="ig"><div class="il">Option Type</div><select class="iv" id="t_type"><option value="call">CALL</option><option value="put">PUT</option></select></div>
-              <div class="ig"><div class="il">IV (%)</div><input class="iv" id="t_iv" type="number" step="0.1" placeholder="e.g. 35"></div>
+            <div class="card-title">Option Pricing</div>
+            <div class="grid3">
+              <div class="ig">
+                <div class="il">Option <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_option_name" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Next month ≥3 weeks out, no weeklys</div>
+              </div>
+              <div class="ig">
+                <div class="il">Theo Price</div>
+                <input class="iv" id="c_theo" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()">
+              </div>
+              <div class="ig">
+                <div class="il">Option Bid</div>
+                <input class="iv" id="c_bid" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()">
+              </div>
+              <div class="ig">
+                <div class="il">Option Ask</div>
+                <input class="iv" id="c_ask" type="number" step="0.01" placeholder="0.00" oninput="calcTrade()">
+              </div>
+              <div class="ig">
+                <div class="il">Limit Price <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_limit" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">(Bid + Ask) / 2</div>
+              </div>
+              <div class="ig">
+                <div class="il">100% Target <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_full" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Theo Price × 2</div>
+              </div>
             </div>
           </div>
+
+          <!-- ROW 4: Current Price & Theo Calculations -->
+          <div class="card">
+            <div class="card-title">Current Price & Theo Calculations</div>
+            <div class="grid3">
+              <div class="ig">
+                <div class="il">Current Stock Price <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_curprice" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Live price from Yahoo Finance</div>
+              </div>
+              <div class="ig">
+                <div class="il">Diff: Current to Entry <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_cgap" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Current Price − Entry Price</div>
+              </div>
+              <div class="ig">
+                <div class="il">Option Entry Theo <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_oet" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Theo + Diff(Current→Entry) via TOS B-S</div>
+              </div>
+              <div class="ig">
+                <div class="il">IV (%)</div>
+                <input class="iv" id="c_iv" type="number" step="0.1" placeholder="e.g. 35" oninput="calcTrade()">
+              </div>
+              <div class="ig">
+                <div class="il">Option Theo at Stop <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_tas" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">B-S: stock at Stop, 1 week later</div>
+              </div>
+              <div class="ig">
+                <div class="il">Max Loss/Share (-) <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_mls" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Option Entry Theo − Theo at Stop</div>
+              </div>
+              <div class="ig">
+                <div class="il">Max Loss $ <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_mld" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Max Loss/Share × 100 × Contracts</div>
+              </div>
+              <div class="ig">
+                <div class="il">Max Loss % <span style="color:var(--accent);font-size:9px">(auto)</span></div>
+                <input class="iv auto" id="r_mlpct" readonly>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Max Loss $ / (Option Entry Theo × 100)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ROW 5: P&L -->
           <div class="card">
             <div class="card-title">P&amp;L Entry</div>
             <div class="grid3">
@@ -1028,6 +1126,16 @@ function populateUI(data){
   loadExpiries();
   // Log
   renderLog(data.ticker);
+  // Auto-fill calculator date and current price
+  const calcDate = document.getElementById('c_date');
+  if (calcDate && !calcDate.value) {
+    const d = new Date(); 
+    calcDate.value = d.toISOString().split('T')[0];
+  }
+  // Set current price display
+  const cp = document.getElementById('r_curprice');
+  if (cp) cp.value = '$' + f2(data.price);
+  calcTrade();
 }
 
 function saveNotes(){
@@ -1194,23 +1302,134 @@ function demoData(ticker){
 
 // ── CALCULATOR ─────────────────────────────────────────────────────────────
 function calcTrade(){
-  const H=+document.getElementById('c_hol').value||0;
-  const L=+document.getElementById('c_lol').value||0;
-  const R=+document.getElementById('c_res').value||0;
-  const Sp=+document.getElementById('c_sup').value||0;
-  const th=+document.getElementById('c_theo').value||0;
-  const ct=+document.getElementById('c_cont').value||1;
-  const rd=+document.getElementById('c_red').value||.20;
-  const cur=S.data?.price||0;
-  if(!H)return;
-  const entry=H+.20,stop=L*.99,swing=R-rd,pole=H-Sp,flag=entry+pole,full=th*2;
-  const mls=entry-stop,tas=th*(stop/entry),mld=Math.abs(th-tas)*100*ct;
-  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  set('r_entry','$'+f2(entry));set('r_limit','$'+f2(th));set('r_stop','$'+f2(stop));
-  set('r_mls','-$'+f2(mls));set('r_swing','$'+f2(swing));set('r_flag','$'+f2(flag));
-  set('r_full','$'+f2(full));set('r_mld','-$'+f2(mld));set('r_sgap',f2(-mls));
-  set('r_tas','$'+f2(tas));set('r_cgap',(cur-entry>=0?'+':'')+'$'+f2(Math.abs(cur-entry)));
-  set('r_oet','$'+f2(th));
+  const H   = +document.getElementById('c_hol').value  || 0;
+  const L   = +document.getElementById('c_lol').value  || 0;
+  const R   = +document.getElementById('c_res').value  || 0;
+  const Sup = +document.getElementById('c_sup').value  || 0;
+  const th  = +document.getElementById('c_theo').value || 0;
+  const bid = +document.getElementById('c_bid').value  || 0;
+  const ask = +document.getElementById('c_ask').value  || 0;
+  const ct  = +document.getElementById('c_cont').value || 1;
+  const rd  = +document.getElementById('c_red').value  || 0.20;
+  const iv  = (+document.getElementById('c_iv').value  || 35) / 100;
+  const cur = S.data?.price || 0;
+  const dateVal = document.getElementById('c_date').value;
+
+  if (!H) return;
+
+  // ── Calculations in Excel order ──────────────────────────────────────
+  // 1. Entry Price = High of Low Day + $0.20
+  const entry = H + 0.20;
+
+  // 2. Option Strike = closest strike >= Entry, rounded up to nearest $5 (or $2.50 if price < $100, $10 if > $500)
+  const step = entry > 500 ? 10 : entry > 100 ? 5 : 2.5;
+  const strike = Math.ceil(entry / step) * step;
+
+  // 3. Stop = Low of Low Day × 0.99
+  const stop = L * 0.99;
+
+  // 4. Difference of Stop to Entry
+  const stopToEntry = stop - entry; // negative number
+
+  // 5. Swing Target = Recent Resistance - Reduce Target
+  const swing = R - rd;
+
+  // 6. Flag Target = Entry + (High of Low Day - Recent Support)
+  const flagpole = H - Sup;
+  const flag = entry + flagpole;
+
+  // 7. Limit Price = (Bid + Ask) / 2
+  const limit = bid && ask ? (bid + ask) / 2 : th;
+
+  // 8. 100% Target = Theo Price × 2
+  const full = th * 2;
+
+  // 9. Current Stock Price (from live data)
+  // 10. Difference of Current to Entry
+  const curToEntry = cur - entry;
+
+  // 11. Option Entry Theo Price
+  // = Theo + B-S adjustment for price difference (current vs entry)
+  // Using Black-Scholes: same strike/expiry but stock at current vs entry price
+  let optEntryTheo = th;
+  if (th > 0 && cur > 0 && strike > 0 && dateVal) {
+    const T = (new Date(dateVal) - new Date()) / (365*24*60*60*1000);
+    if (T > 0) {
+      const theoAtCurrent = bs(cur, strike, T, 0.045, iv, 'call');
+      const theoAtEntry   = bs(entry, strike, T, 0.045, iv, 'call');
+      // Adjust: scale theo by ratio of B-S prices
+      if (theoAtEntry > 0) optEntryTheo = th * (theoAtCurrent / theoAtEntry);
+    }
+  }
+
+  // 12. Option Theo Price at Stop
+  // = B-S at stop price, 1 week from now
+  let theoAtStop = 0;
+  if (th > 0 && stop > 0 && strike > 0 && dateVal) {
+    const T_1wk = Math.max(0.001, (new Date(dateVal) - new Date()) / (365*24*60*60*1000) - 7/365);
+    theoAtStop = bs(stop, strike, T_1wk, 0.045, iv, 'call');
+    // Scale to actual theo
+    const T_now = (new Date(dateVal) - new Date()) / (365*24*60*60*1000);
+    if (T_now > 0) {
+      const theoAtEntryNow = bs(entry, strike, T_now, 0.045, iv, 'call');
+      if (theoAtEntryNow > 0) theoAtStop = th * (theoAtStop / theoAtEntryNow);
+    }
+  }
+
+  // 13. Max Loss/Share = Option Entry Theo - Option Theo at Stop (negative)
+  const maxLossShare = theoAtStop > 0 ? theoAtStop - optEntryTheo : stopToEntry;
+
+  // 14. Max Loss $ = |Max Loss/Share| × 100 × Contracts
+  const maxLossDollar = Math.abs(maxLossShare) * 100 * ct;
+
+  // 15. Max Loss % = Max Loss $ / (Option Entry Theo × 100 × Contracts)
+  const maxLossPct = optEntryTheo > 0 ? (maxLossDollar / (optEntryTheo * 100 * ct)) * 100 : 0;
+
+  // 16. Option name = auto-generated from strike + expiry
+  const optName = getOptionName(strike);
+
+  // ── Set values ──────────────────────────────────────────────────────
+  const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
+  const setTxt = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+
+  setVal('r_entry',       '$' + f2(entry));
+  setVal('r_strike',      '$' + f2(strike));
+  setVal('r_stop',        '$' + f2(stop));
+  setVal('r_sgap',        (stopToEntry >= 0 ? '+' : '') + '$' + f2(stopToEntry));
+  setVal('r_swing',       '$' + f2(swing));
+  setVal('r_flag',        '$' + f2(flag));
+  setVal('r_limit',       '$' + f2(limit));
+  setVal('r_full',        '$' + f2(full));
+  setVal('r_curprice',    cur > 0 ? '$' + f2(cur) : '—');
+  setVal('r_cgap',        (curToEntry >= 0 ? '+' : '') + '$' + f2(curToEntry));
+  setVal('r_oet',         '$' + f2(optEntryTheo));
+  setVal('r_tas',         theoAtStop > 0 ? '$' + f2(theoAtStop) : '—');
+  setVal('r_mls',         (maxLossShare >= 0 ? '' : '-') + '$' + f2(Math.abs(maxLossShare)));
+  setVal('r_mld',         '-$' + f2(maxLossDollar));
+  setVal('r_mlpct',       '-' + f2(maxLossPct, 1) + '%');
+  setVal('r_option_name', optName);
+}
+
+function getOptionName(strike) {
+  // Get next monthly expiry that is >= 3 weeks (21 days) out, no weeklys
+  const today = new Date();
+  const minDate = new Date(today.getTime() + 21 * 24 * 60 * 60 * 1000);
+  // Find next monthly expiry (3rd Friday of each month)
+  for (let m = 0; m < 6; m++) {
+    const d = new Date(today.getFullYear(), today.getMonth() + m + 1, 1);
+    // Find 3rd Friday
+    let friCount = 0;
+    let day = new Date(d.getFullYear(), d.getMonth(), 1);
+    while (friCount < 3) {
+      if (day.getDay() === 5) friCount++;
+      if (friCount < 3) day.setDate(day.getDate() + 1);
+    }
+    if (day >= minDate) {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${day.getDate()} ${months[day.getMonth()]} ${Math.round(strike)} Call`;
+    }
+  }
+  return `${Math.round(strike)} Call`;
 }
 function calcPL(){
   const i=+document.getElementById('pl_in').value||0;
@@ -1309,6 +1528,9 @@ function fillCalc(){
   document.getElementById('c_lol').value=f2(L.lol);
   document.getElementById('c_res').value=f2(L.res);
   document.getElementById('c_sup').value=f2(L.sup);
+  // Set date to today if not set
+  const cd = document.getElementById('c_date');
+  if(cd && !cd.value) cd.value = new Date().toISOString().split('T')[0];
   calcTrade();showTab('calculator');toast('Calculator filled!','ok');
 }
 
