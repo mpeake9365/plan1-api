@@ -1513,32 +1513,56 @@ function detectLevels(){
   const highs = bars.map(b => b.h);
   const lows  = bars.map(b => b.l);
 
-  // ── Step 1: Find most recent swing high (Recent Resistance = HH2)
-  // Uses same 40-day lookback as entry signal scanner
-  // Prefer swing high within last 60 bars
-  const sH = swingHighs(highs, 40);
-  const recentSH = sH.filter(i => i >= n - 60);
-  const shi = recentSH.length ? recentSH[recentSH.length-1] :
-              sH.length ? sH[sH.length-1] : n - 10;
+  // ── Step 1: Find the most recent swing high = Recent Resistance (HH2)
+  // This is the highest point just before the current pullback.
+  // We find it by looking back from today and finding the peak
+  // before the current sequence of declining highs started.
+  // Look back up to 60 bars to find where the most recent high was.
+  let shi = n - 1;
+  let peakHigh = highs[n - 1];
+
+  // Walk backwards from today to find the most recent peak
+  // The peak is where highs stop going up and start coming down
+  for (let i = n - 2; i >= Math.max(0, n - 60); i--) {
+    if (highs[i] > peakHigh) {
+      peakHigh = highs[i];
+      shi = i;
+    }
+    // Stop looking once we've found a peak and the highs before it are lower
+    // (i.e., we've gone past the top of the swing)
+    if (i < shi - 5 && highs[i] < peakHigh * 0.98) break;
+  }
 
   // Recent Resistance = HIGH of the swing high day
   const res = highs[shi];
 
-  // ── Step 2: Find most recent swing low BEFORE the swing high (Recent Support = HL2)
-  const sL = swingLows(lows, 40);
-  const swingLowsBefore = sL.filter(i => i < shi);
-  const sli = swingLowsBefore.length ? swingLowsBefore[swingLowsBefore.length-1] : 0;
-  const sup = lows[sli] || lows[Math.max(0, shi - 20)];
+  // ── Step 2: Find most recent swing low BEFORE shi = Recent Support (HL2)
+  // Look back from shi to find the lowest low in the 60 bars before it
+  let sli = Math.max(0, shi - 60);
+  let lowestSupport = lows[sli];
+  for (let i = sli; i < shi; i++) {
+    if (lows[i] < lowestSupport) {
+      lowestSupport = lows[i];
+      sli = i;
+    }
+  }
+  // But we want the SWING LOW - the most recent significant trough before shi
+  // Use swingLows with a reasonable lookback
+  const sL = swingLows(lows, 10);
+  const swingLowsBefore = sL.filter(i => i < shi && i >= shi - 80);
+  if (swingLowsBefore.length) {
+    sli = swingLowsBefore[swingLowsBefore.length - 1];
+  }
+  const sup = lows[sli];
 
   // ── Step 3: Find the lowest-low day during the pullback after shi
-  // This is the "Low Day" — same logic as entry signal pullback detection
   let lowDayIdx = shi;
   let lowestLow = lows[shi];
   let pbActive = false;
 
   for (let i = shi + 1; i < n; i++) {
     if (!pbActive) {
-      if (highs[i] < highs[i-1]) { pbActive = true; }
+      if (highs[i] < highs[i-1]) pbActive = true;
     }
     if (pbActive) {
       if (lows[i] < lowestLow) {
@@ -1550,7 +1574,6 @@ function detectLevels(){
 
   // High of Low Day = HIGH of the day with the lowest LOW during pullback
   const hol = highs[lowDayIdx];
-  // Low of Low Day = LOW of that same day
   const lol = lows[lowDayIdx];
 
   S.levels = { hol, lol, res, sup, li: lowDayIdx, entry: hol + 0.20, stop: lol * 0.99 };
@@ -1791,11 +1814,14 @@ function signal(data){
   const sH=swingHighs(highs);
   const hasHH=sH.length>=2&&highs[sH[sH.length-1]]>highs[sH[sH.length-2]];
   const hhNote=sH.length>=2?`$${f2(highs[sH[sH.length-1]])} ${hasHH?'>':'≤'} $${f2(highs[sH[sH.length-2]])}`:'Insufficient data';
-  // Define shi here so pullback and support sections can both use it
-  // Use most recent swing high - prefer one within last 60 bars if available
-  const recentSH = sH.filter(i => i >= n - 60);
-  const shi = recentSH.length ? recentSH[recentSH.length-1] : 
-              sH.length ? sH[sH.length-1] : n-10;
+  // Define shi = most recent swing high (the peak just before current pullback)
+  // Walk back from today to find the highest point in the last 60 bars
+  let shi = n - 1;
+  let shiPeak = highs[n - 1];
+  for (let _i = n - 2; _i >= Math.max(0, n - 60); _i--) {
+    if (highs[_i] > shiPeak) { shiPeak = highs[_i]; shi = _i; }
+    if (_i < shi - 5 && highs[_i] < shiPeak * 0.98) break;
+  }
   // ── 2. PULLBACK (2–5 days) ─────────────────────────────────────────────
   // DEFINITION:
   // 1. Pullback STARTS when a day's high is lower than the prior day's high
