@@ -1508,18 +1508,57 @@ function togOv(k,btn){S.ovs[k]=!S.ovs[k];btn.className='ov-btn '+(S.ovs[k]?'on':
 function setRange(r){S.range=r;document.querySelectorAll('.crng-btn').forEach(b=>b.classList.toggle('on',b.textContent===(r===30?'1M':r===90?'3M':r===180?'6M':'1Y')));drawChart();}
 
 function detectLevels(){
-  const bars=S.bars,n=bars.length;if(n<10)return;
-  let li=n-1,lc=bars[n-1].c;
-  for(let i=n-1;i>=Math.max(0,n-10);i--){if(bars[i].c<lc){lc=bars[i].c;li=i;}}
-  const hol=bars[li].h,lol=bars[li].l;
-  let res=0;for(let i=Math.max(0,li-60);i<li;i++){if(bars[i].h>res)res=bars[i].h;}
-  let sup=Infinity;for(let i=Math.max(0,li-20);i<li;i++){if(bars[i].l<sup)sup=bars[i].l;}
-  if(sup===Infinity)sup=lol*.95;
-  S.levels={hol,lol,res,sup,li,entry:hol+.20,stop:lol*.99};
-  document.getElementById('ch_hol').textContent='$'+f2(hol);
-  document.getElementById('ch_lol').textContent='$'+f2(lol);
-  document.getElementById('ch_res').textContent='$'+f2(res);
-  document.getElementById('ch_sup').textContent='$'+f2(sup);
+  const bars = S.bars, n = bars.length;
+  if (n < 30) return;
+  const highs = bars.map(b => b.h);
+  const lows  = bars.map(b => b.l);
+
+  // ── Step 1: Find most recent swing high (Recent Resistance = HH2)
+  // Uses same 40-day lookback as entry signal scanner
+  // Prefer swing high within last 60 bars
+  const sH = swingHighs(highs, 40);
+  const recentSH = sH.filter(i => i >= n - 60);
+  const shi = recentSH.length ? recentSH[recentSH.length-1] :
+              sH.length ? sH[sH.length-1] : n - 10;
+
+  // Recent Resistance = HIGH of the swing high day
+  const res = highs[shi];
+
+  // ── Step 2: Find most recent swing low BEFORE the swing high (Recent Support = HL2)
+  const sL = swingLows(lows, 40);
+  const swingLowsBefore = sL.filter(i => i < shi);
+  const sli = swingLowsBefore.length ? swingLowsBefore[swingLowsBefore.length-1] : 0;
+  const sup = lows[sli] || lows[Math.max(0, shi - 20)];
+
+  // ── Step 3: Find the lowest-low day during the pullback after shi
+  // This is the "Low Day" — same logic as entry signal pullback detection
+  let lowDayIdx = shi;
+  let lowestLow = lows[shi];
+  let pbActive = false;
+
+  for (let i = shi + 1; i < n; i++) {
+    if (!pbActive) {
+      if (highs[i] < highs[i-1]) { pbActive = true; }
+    }
+    if (pbActive) {
+      if (lows[i] < lowestLow) {
+        lowestLow = lows[i];
+        lowDayIdx = i;
+      }
+    }
+  }
+
+  // High of Low Day = HIGH of the day with the lowest LOW during pullback
+  const hol = highs[lowDayIdx];
+  // Low of Low Day = LOW of that same day
+  const lol = lows[lowDayIdx];
+
+  S.levels = { hol, lol, res, sup, li: lowDayIdx, entry: hol + 0.20, stop: lol * 0.99 };
+
+  document.getElementById('ch_hol').textContent = '$' + f2(hol);
+  document.getElementById('ch_lol').textContent = '$' + f2(lol);
+  document.getElementById('ch_res').textContent = '$' + f2(res);
+  document.getElementById('ch_sup').textContent = '$' + f2(sup);
 }
 
 function fillCalc(){
